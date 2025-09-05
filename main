@@ -1,0 +1,60 @@
+# Docker Compose configuration for MoonTV with Kvrocks storage
+# Deploys the MoonTV application with a Kvrocks backend for persistent storage
+version: '3.8'
+
+services:
+  moontv-core:
+    image: ghcr.io/moontechlab/lunatv:latest
+    container_name: moontv-core
+    restart: on-failure
+    ports:
+      - '3000:3000' # Exposes MoonTV on port 3000
+    environment:
+      # Admin credentials
+      - USERNAME=admin
+      - PASSWORD=admin_password
+      # Storage configuration
+      - NEXT_PUBLIC_STORAGE_TYPE=kvrocks
+      - KVROCKS_URL=redis://moontv-kvrocks:6666
+      # Site configuration (modify as needed)
+      - SITE_BASE=https://your-site.com
+      - NEXT_PUBLIC_SITE_NAME=MoonTV
+      - ANNOUNCEMENT=This website provides video search services only. Content is sourced from third-party websites.
+      # Search and Douban settings
+      - NEXT_PUBLIC_SEARCH_MAX_PAGE=5
+      - NEXT_PUBLIC_DOUBAN_PROXY_TYPE=direct
+      - NEXT_PUBLIC_DOUBAN_IMAGE_PROXY_TYPE=direct
+      - NEXT_PUBLIC_DISABLE_YELLOW_FILTER=false
+      - NEXT_PUBLIC_FLUID_SEARCH=true
+    networks:
+      - moontv-network
+    depends_on:
+      moontv-kvrocks:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  moontv-kvrocks:
+    image: apache/kvrocks:2.8.0 # Specify a stable version
+    container_name: moontv-kvrocks
+    restart: unless-stopped
+    volumes:
+      - kvrocks-data:/var/lib/kvrocks
+    networks:
+      - moontv-network
+    healthcheck:
+      test: ["CMD", "kvrocks-cli", "-h", "moontv-kvrocks", "-p", "6666", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  moontv-network:
+    driver: bridge
+
+volumes:
+  kvrocks-data:
+    name: moontv-kvrocks-data
