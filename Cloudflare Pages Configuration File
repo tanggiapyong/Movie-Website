@@ -1,0 +1,10 @@
+# Cloudflare Pages configuration for MoonTV
+# Configures build settings for deploying a Next.js 14 application
+build:
+  command: npm install && npm run build
+  output_directory: .next
+  environment:
+    # Node.js version for compatibility with Next.js 14
+    NODE_VERSION: "18"
+    # Ensure Next.js uses serverless mode
+    NEXT_TELEMETRY_DISABLED: "1"
